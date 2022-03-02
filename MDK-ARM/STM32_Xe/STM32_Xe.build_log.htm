@@ -1,0 +1,85 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.36.0.0
+Copyright (C) 2021 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Dung Tran Nguyen, obit, LIC=NQQMA-1AXYF-30KNC-771Q4-TZ5PV-9RW1P
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Plus  Version: 5.36.0.0
+Toolchain Path:  C:\Keil_v5\ARM\ARMCLANG\Bin
+C Compiler:      ArmClang.exe V6.16
+Assembler:       Armasm.exe V6.16
+Linker/Locator:  ArmLink.exe V6.16
+Library Manager: ArmAr.exe V6.16
+Hex Converter:   FromElf.exe V6.16
+CPU DLL:         SARMCM3.DLL V5.36.0.0
+Dialog DLL:      DCM.DLL V1.17.3.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.9.0
+Dialog DLL:      TCM.DLL V1.53.0.0
+ 
+<h2>Project:</h2>
+G:\My Drive\ArduinoXe\PROGRAM_XE\STM32_Xe\MDK-ARM\STM32_Xe.uvprojx
+Project File Date:  03/01/2022
+
+<h2>Output:</h2>
+*** Using Compiler 'V6.16', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
+Build target 'STM32_Xe'
+../Program/program.c(33): warning: function 'program' could be declared with attribute 'noreturn' [-Wmissing-noreturn]
+{
+^
+../Program/program.c(4): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal.h(30): warning: In file included from...
+../Inc\stm32f1xx_hal_conf.h(333): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal_tim.h(344): warning: padding struct 'TIM_HandleTypeDef' with 3 bytes to align 'hdma' [-Wpadded]
+  DMA_HandleTypeDef                  *hdma[7];          /*!< DMA Handlers array
+                                      ^
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal_tim.h(338): warning: padding size of 'TIM_HandleTypeDef' with 1 byte to alignment boundary [-Wpadded]
+typedef struct
+        ^
+../Program/program.c(4): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal.h(30): warning: In file included from...
+../Inc\stm32f1xx_hal_conf.h(249): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal_dma.h(121): warning: padding struct 'struct __DMA_HandleTypeDef' with 2 bytes to align 'Parent' [-Wpadded]
+  void                  *Parent;                                                      /*!< Parent object state                    */  
+                         ^
+../Program/program.c(4): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal.h(30): warning: In file included from...
+../Inc\stm32f1xx_hal_conf.h(337): warning: In file included from...
+../Drivers/STM32F1xx_HAL_Driver/Inc\stm32f1xx_hal_uart.h(183): warning: padding struct 'struct __UART_HandleTypeDef' with 1 byte to align 'ErrorCode' [-Wpadded]
+  __IO uint32_t                 ErrorCode;        /*!< UART Error code                    */
+                                ^
+5 warnings generated.
+compiling program.c...
+linking...
+Program Size: Code=29644 RO-data=1104 RW-data=12 ZI-data=7596  
+FromELF: creating hex file...
+"STM32_Xe\STM32_Xe.axf" - 0 Error(s), 5 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.8.0.pack
+                ARM.CMSIS.5.8.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.5.0
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.STM32F1xx_DFP.2.4.0.pack
+                Keil.STM32F1xx_DFP.2.4.0
+                STMicroelectronics STM32F1 Series Device Support, Drivers and Examples
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_STM32_Xe
+  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include
+  C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE:5.5.0
+Build Time Elapsed:  00:00:13
+</pre>
+</body>
+</html>
