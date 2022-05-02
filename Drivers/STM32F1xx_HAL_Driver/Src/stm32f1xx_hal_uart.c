@@ -255,6 +255,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
+#include "program.h"
 
 /** @addtogroup STM32F1xx_HAL_Driver
   * @{
@@ -3554,103 +3555,106 @@ static HAL_StatusTypeDef UART_EndTransmit_IT(UART_HandleTypeDef *huart)
   return HAL_OK;
 }
 
+#if 1
+//For STM32F103
 /**
   * @brief  Receives an amount of data in non blocking mode
-  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
+  * @param  huart: pointer to a UART_HandleTypeDef structure that contains
   *                the configuration information for the specified UART module.
   * @retval HAL status
   */
-static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
+static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef* huart)
 {
-  uint8_t  *pdata8bits;
-  uint16_t *pdata16bits;
+	uint16_t* tmp;
+	unsigned char data;
 
-  /* Check that a Rx process is ongoing */
-  if (huart->RxState == HAL_UART_STATE_BUSY_RX)
-  {
-    if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))
-    {
-      pdata8bits  = NULL;
-      pdata16bits = (uint16_t *) huart->pRxBuffPtr;
-      *pdata16bits = (uint16_t)(huart->Instance->DR & (uint16_t)0x01FF);
-      huart->pRxBuffPtr += 2U;
-    }
-    else
-    {
-      pdata8bits = (uint8_t *) huart->pRxBuffPtr;
-      pdata16bits  = NULL;
+	/* Check that a Rx process is ongoing */
+	if(huart->RxState == HAL_UART_STATE_BUSY_RX){
+		if(huart->Init.WordLength == UART_WORDLENGTH_9B){
+			tmp = (uint16_t*) huart->pRxBuffPtr;
+			if(huart->Init.Parity == UART_PARITY_NONE){
+				*tmp = (uint16_t) (huart->Instance->DR & (uint16_t) 0x01FF);
+				//huart->pRxBuffPtr += 2U;
+			}
+			else{
+				*tmp = (uint16_t) (huart->Instance->DR & (uint16_t) 0x00FF);
+				//huart->pRxBuffPtr += 1U;
+			}
+		}
+		else{
+			if(huart->Init.Parity == UART_PARITY_NONE){
+				//*huart->pRxBuffPtr++ = (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
+				data = (uint8_t) (huart->Instance->DR & (uint8_t) 0x00FF);
+				*huart->pRxBuffPtr++ = data;
+			}
+			else{
+				*huart->pRxBuffPtr++ = (uint8_t) (huart->Instance->DR & (uint8_t) 0x007F);
+			}
+		}
 
-      if ((huart->Init.WordLength == UART_WORDLENGTH_9B) || ((huart->Init.WordLength == UART_WORDLENGTH_8B) && (huart->Init.Parity == UART_PARITY_NONE)))
-      {
-        *pdata8bits = (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
-      }
-      else
-      {
-        *pdata8bits = (uint8_t)(huart->Instance->DR & (uint8_t)0x007F);
-      }
-      huart->pRxBuffPtr += 1U;
-    }
+		if(huart->Instance == USART1){
+			if(uart1_rx_it(data)){
+				/* Disable the IRDA Data Register not empty Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_RXNE);
 
-    if (--huart->RxXferCount == 0U)
-    {
-      /* Disable the UART Data Register not empty Interrupt */
-      __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
+				/* Disable the UART Parity Error Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_PE);
+				/* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_ERR);
 
-      /* Disable the UART Parity Error Interrupt */
-      __HAL_UART_DISABLE_IT(huart, UART_IT_PE);
+				/* Rx process is completed, restore huart->RxState to Ready */
+				huart->RxState = HAL_UART_STATE_READY;
 
-      /* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
-      __HAL_UART_DISABLE_IT(huart, UART_IT_ERR);
+				HAL_UART_RxCpltCallback(huart);
 
-      /* Rx process is completed, restore huart->RxState to Ready */
-      huart->RxState = HAL_UART_STATE_READY;
+				return HAL_OK;
+			}
+		}
 
-      /* Check current reception Mode :
-         If Reception till IDLE event has been selected : */
-      if (huart->ReceptionType == HAL_UART_RECEPTION_TOIDLE)
-      {
-        /* Set reception type to Standard */
-        huart->ReceptionType = HAL_UART_RECEPTION_STANDARD;
+		if(huart->Instance == USART2){
+			if(uart2_rx_it(data)){
+				/* Disable the IRDA Data Register not empty Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_RXNE);
 
-        /* Disable IDLE interrupt */
-        CLEAR_BIT(huart->Instance->CR1, USART_CR1_IDLEIE);
+				/* Disable the UART Parity Error Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_PE);
+				/* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_ERR);
 
-        /* Check if IDLE flag is set */
-        if (__HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE))
-        {
-          /* Clear IDLE flag in ISR */
-          __HAL_UART_CLEAR_IDLEFLAG(huart);
-        }
+				/* Rx process is completed, restore huart->RxState to Ready */
+				huart->RxState = HAL_UART_STATE_READY;
 
-#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
-        /*Call registered Rx Event callback*/
-        huart->RxEventCallback(huart, huart->RxXferSize);
-#else
-        /*Call legacy weak Rx Event callback*/
-        HAL_UARTEx_RxEventCallback(huart, huart->RxXferSize);
-#endif
-      }
-      else
-      {
-       /* Standard reception API called */
-#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)		  
-       /*Call registered Rx complete callback*/
-       huart->RxCpltCallback(huart);
-#else
-       /*Call legacy weak Rx complete callback*/
-       HAL_UART_RxCpltCallback(huart);
-#endif /* USE_HAL_UART_REGISTER_CALLBACKS */
-      }
+				HAL_UART_RxCpltCallback(huart);
 
-      return HAL_OK;
-    }
-    return HAL_OK;
-  }
-  else
-  {
-    return HAL_BUSY;
-  }
+				return HAL_OK;
+			}
+		}
+
+		if(huart->Instance == USART3){
+			if(uart3_rx_it(data)){
+				/* Disable the IRDA Data Register not empty Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_RXNE);
+
+				/* Disable the UART Parity Error Interrupt */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_PE);
+				/* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+				__HAL_UART_DISABLE_IT(huart,UART_IT_ERR);
+
+				/* Rx process is completed, restore huart->RxState to Ready */
+				huart->RxState = HAL_UART_STATE_READY;
+
+				HAL_UART_RxCpltCallback(huart);
+
+				return HAL_OK;
+			}
+		}
+		return HAL_OK;
+	}
+	else{
+		return HAL_BUSY;
+	}
 }
+#endif // 0
 
 /**
   * @brief  Configures the UART peripheral.

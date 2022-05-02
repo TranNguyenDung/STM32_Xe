@@ -1,9 +1,14 @@
 {
   "ExpandedNodes": [
     "",
+    "\\Drivers",
+    "\\Drivers\\STM32F1xx_HAL_Driver",
+    "\\Drivers\\STM32F1xx_HAL_Driver\\Src",
     "\\Inc",
     "\\MDK-ARM",
-    "\\Program"
+    "\\Program",
+    "\\Src"
   ],
+  "SelectedNode": "\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_uart.c",
   "PreviewInSolutionExplorer": false
 }

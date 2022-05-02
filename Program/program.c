@@ -23,8 +23,6 @@ main program
 		#endif // 0
 	}
 	fact_bk = fact;
-  //htim2.Init.Prescaler = (unsigned short)(fact.clk_Prescaler_scan[0] << 8) | fact.clk_Prescaler_scan[1];
-  //htim5.Init.Prescaler = (unsigned short)(fact.clk_Prescaler_scan[0] << 8) | fact.clk_Prescaler_scan[1];
 */
 //----------------------------------------------
 
@@ -68,7 +66,6 @@ void program(void)
 	//HAL_TIM_Base_Start_IT(&htim2);
 	//HAL_TIM_Base_Start_IT(&htim5);
 
-	clockCouter = (72 * 10 ^ 6);//(72 * 10 ^ 6) / (htim2.Init.Prescaler + 1);
 	//HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
 	//HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_2);
 	//HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_3);
@@ -117,14 +114,15 @@ void program(void)
 		opera();
 		uart2_with_due();
 		mem_set();
-		serial2_comm();//Xử lý nhận data IR
+		serial1_comm();//Xử lý nhận data IR
 		serial3_communication();//Xử lý nhận data blue
-		get_status_rasp();
 		drive_xe();
 		pwm_drive_opera();
+		rasp_opera();
 	}
 }
 /*----------------------------------------------------------------*/
+
 
 /*----------------------------------------------------------------*/
 //INIT data
@@ -133,79 +131,17 @@ void program(void)
 //Init Data
 void init_data(void)
 {
-	//car_run_mode = CAR_RUN_CDIPDNADN;
-	car_run_mode = CAR_RUN_MERGE_LINE;
-	car_run_mode_bk = car_run_mode;
-	car_back_flg = 0;
-	car_not_get_ir_flg = 0;
-	car_start_flg = 0;
-	
 	fact_write_tm = 0;
-	car_run_ena = 0;
-	car_run_up_down_flg_bk = CAR_RUN_DOWN;
-	car_run_up_down_flg = CAR_RUN_DOWN;
-	//car_run_up_down_flg = CAR_RUN_UP;
-	rgb_pwm_tot = 1;
-	rgb_status = RGB_STATUS_FULL_CHIP;
-	car_start_run_flg = 1;
-	grb_stanby_tm = 100;
-	//rgb_pwm();
+	send2pc_addr_bk = 0xFF;
+	mem_set_data(&ls_add_pass[0],0x00,sizeof(ls_add_pass));
 }
 
 //Init fact
 void init_fact(void)
 {
-	unsigned char i;
-	unsigned long dmy;
-
 	fact.header[0] = 0x55;
 	fact.header[1] = 0xAA;
 	
-	for(i = 0; i < 5; i++){
-		dmy =5000;
-		fact.ch[i].red_thr[0] = (dmy & 0xFF000000) >> 24;
-		fact.ch[i].red_thr[1] = (dmy & 0x00FF0000) >> 16;
-		fact.ch[i].red_thr[2] = (dmy & 0x0000FF00) >> 8;
-		fact.ch[i].red_thr[3] = (dmy & 0x000000FF) >> 0;
-		fact.ch[i].red_thr_chk_flg = 1;
-		
-		dmy = 5000;
-		fact.ch[i].green_thr[0] = (dmy & 0xFF000000) >> 24;
-		fact.ch[i].green_thr[1] = (dmy & 0x00FF0000) >> 16;
-		fact.ch[i].green_thr[2] = (dmy & 0x0000FF00) >> 8;
-		fact.ch[i].green_thr[3] = (dmy & 0x000000FF) >> 0;
-		//fact.ch1.green_thr_chk_flg = 1;
-		fact.ch[i].green_thr_chk_flg = 0;
-		
-		dmy = 5000;
-		fact.ch[i].blue_thr[0] = (dmy & 0xFF000000) >> 24;
-		fact.ch[i].blue_thr[1] = (dmy & 0x00FF0000) >> 16;
-		fact.ch[i].blue_thr[2] = (dmy & 0x0000FF00) >> 8;
-		fact.ch[i].blue_thr[3] = (dmy & 0x000000FF) >> 0;
-		//fact.ch[i].blue_thr_chk_flg = 1;
-		fact.ch[i].blue_thr_chk_flg = 0;
-		
-		dmy = 5000;
-		fact.ch[i].nofiter_thr[0] = (dmy & 0xFF000000) >> 24;
-		fact.ch[i].nofiter_thr[1] = (dmy & 0x00FF0000) >> 16;
-		fact.ch[i].nofiter_thr[2] = (dmy & 0x0000FF00) >> 8;
-		fact.ch[i].nofiter_thr[3] = (dmy & 0x000000FF) >> 0;
-		//fact.ch[i].nofiter_thr_chk_flg = 1;
-		fact.ch[i].nofiter_thr_chk_flg = 0;
-
-		fact.ch[i].value_at_over_thr = 1;
-
-		//Offset
-		dmy = 500;
-		fact.ch[i].offset[0] = (dmy & 0xFF00) >> 8;
-		fact.ch[i].offset[1] = (dmy & 0x00FF) >> 0;
-	}
-	
-	//frequency scan RGB
-	dmy = 5;
-	fact.clk_Prescaler_scan[0] = (dmy & 0xFF00) >> 8;
-	fact.clk_Prescaler_scan[1] = (dmy & 0x00FF) >> 0;
-
 	fact.duty_ch3[0] = 50;//L
 	fact.duty_ch3[1] = 50;//R
 
@@ -221,9 +157,6 @@ void init_fact(void)
 	fact.duty_ch5[0] = 50;//L
 	fact.duty_ch5[1] = 50;//R
 
-	fact.rgb_scale = FREQ_LOW;
-	
-	
 	fact.address = 0xFF;
 	
 	// 0xAA not next app address
@@ -299,6 +232,7 @@ void init_drive()
 #endif // 1
 /*----------------------------------------------------------------*/
 
+
 /*----------------------------------------------------------------*/
 //System opera/timer...
 /*----------------------------------------------------------------*/
@@ -309,23 +243,13 @@ void init_drive()
 void timer_couter(void)
 {
 	COUNT_DOWN(one1sec_tm)
-	COUNT_DOWN(ir_scan_tm)//couter resend to CAR
-	COUNT_DOWN(ir_run_tm)
-	COUNT_DOWN(send_due_tm)//couter resend to due
-	COUNT_DOWN(scan_rgb_tm)
-	COUNT_DOWN(ir_send_must_ok_tm)//re-send to Dua via IR
-	COUNT_DOWN(rgb_pwm_tot)
-	COUNT_DOWN(driver_run_more_tm)//Run more space for face to face module IR
-	COUNT_DOWN(car_run_mode_tm)
-	COUNT_DOWN(car_run_mode_seq_tm)
-	COUNT_DOWN(rgb_wait_chk_tm)
 	COUNT_DOWN(drive_tm)
-	COUNT_DOWN(grb_stanby_tm)
-	COUNT_DOWN(car_tm)
 	COUNT_DOWN(ras_blink_tot)
+	COUNT_DOWN(ras_run_tm)
+	COUNT_DOWN(send2pc_tm)
 	
+	COUNT_DOWN_LIMIT(ras_run_tot,1)
 	COUNT_DOWN_LIMIT(r1_tm,1)//TimeOut receiver module IR
-	COUNT_DOWN_LIMIT(r3_tot,1)
 	COUNT_DOWN_LIMIT(bootloader_tm,1)
 	COUNT_DOWN_LIMIT(fact_write_tm,1)
 }
@@ -333,7 +257,7 @@ void timer_couter(void)
 //
 void opera(void)
 {
-	unsigned char i;
+	//unsigned char i;
 
 	if(one1sec_tm == 0){
 		if(updatebootloader_flg && (bootloader_error_flg == 0)){
@@ -360,32 +284,7 @@ void opera(void)
 			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
 		}
 	}
-	
-	if(ras_blink ^ ras_blink_bk){
-		ras_blink_bk = ras_blink;
-		ras_blink_tot = 200;
-	}
 
-	if(ras_th_bk ^ ras_th){
-		ras_th_bk = ras_th;
-		if(ras_th_bk == 0){
-			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_RESET);			
-		}
-		else if(ras_th_bk == 1){
-			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_SET);
-			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_RESET);	
-		}
-		else{
-			if(ras_th != 2){
-				ras_th = 2;
-				ras_th_bk = 2;
-			}
-			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_SET);
-			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_SET);		
-		}
-	}
-	
 #if 0
 	// Goto bootloader
 	if(fact.bootloader == JIMP_BOOTLOADER){
@@ -408,89 +307,95 @@ void opera(void)
 		r1_tm = 0;
 		r1_flg = 1;
 	}
+
+}
+
+
+#endif // 1
+/*----------------------------------------------------------------*/
+
+
+/*----------------------------------------------------------------*/
+//RASP
+/*----------------------------------------------------------------*/
+#if 1
+//RASP opera
+void rasp_opera()
+{
+	if(ras_run_seq == 0){
+		ras_run_seq = 3;
+		ras_run_tm = 1000;
+		ras_run_tot = 1;
+		ras_ok_flg = 0;
+	}
+	else if(ras_run_seq == 1){//Start On
+		if(ras_run_tm == 0){
+			ras_run_tm = 50;
+			ras_ok_flg = 0;
+			ras_run_seq++;
+			HAL_GPIO_WritePin(RAS_START_GPIO_Port,RAS_START_Pin,GPIO_PIN_RESET);
+		}
+	}
+	else if(ras_run_seq == 2){//Start Off
+		if(ras_run_tm == 0){
+			ras_run_tm = 6000;
+			ras_ok_flg = 0;
+			if(system_shutdown_flg == 0){
+				ras_run_seq = 3;
+				ras_run_tot = 1000;
+			}
+			else{
+				ras_run_seq = 4;
+			}
+			HAL_GPIO_WritePin(RAS_START_GPIO_Port,RAS_START_Pin,GPIO_PIN_SET);
+		}
+	}
+	else if(ras_run_seq == 3){
+		//RAS
+		if(ras_blink ^ ras_blink_bk){
+			ras_blink_bk = ras_blink;
+			ras_blink_tot = 200;
+			ras_run_tot = 1000;
+			ras_ok_flg = 1;
+		}	
+		if(ras_run_tm == 0){
+			// Restart
+			if(system_shutdown_flg == 0){
+				if(ras_run_tot == 1){
+					ras_run_tot = 0;
+					ras_run_seq = 1;
+					ras_ok_flg = 0;
+				}			
+			}
+			else{
+				ras_run_seq = 1;
+			}
+		}
+	}
+	else{}
 	
-	if(r3_tot == 1){
-		r3_tot = 0;
-		r3_flg = 1;
+	// Set TH
+	if(ras_th_bk ^ ras_th){
+		ras_th_bk = ras_th;
+		if(ras_th_bk == 0){
+			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_RESET);			
+		}
+		else if(ras_th_bk == 1){
+			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_SET);
+			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_RESET);	
+		}
+		else{
+			if(ras_th != 2){
+				ras_th = 2;
+				ras_th_bk = 2;
+			}
+			HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port,RAS_SET_TH_H_Pin,GPIO_PIN_SET);
+			HAL_GPIO_WritePin(RAS_SET_TH_L_GPIO_Port,RAS_SET_TH_L_Pin,GPIO_PIN_SET);		
+		}
 	}
 	
-	if(flash_erase_flg){
-		flash_erase_flg = 0;
-		//erase_sector(FLASH_FACT_BANK_SECTOR);
-	}
-
-#if 0
-	//flash test
-	if(flash_erase_flg){
-	flash_erase_flg = 0;
-		//save_to_flash(&tmp);
-		erase_sector(FLASH_FACT_BANK2_SECTOR);
-	}
-
-	if(flash_write_flg){
-		flash_write_flg = 0;
-		//i = 0;
-		//data[i++] = 0x01020304;
-		//data[i++] = 0x05060708;
-		//data[i++] = 0x090A0B0C;
-		//data[i++] = 0x0D0E0F10;
-		//data[i++] = 0x11121314;
-		//data[i++] = 0x15161719;
-		//data[i++] = 0x1A1B1C1D;
-		//data[i++] = 0x1E1F2021;
-		//flash_write1(&data,0x081E0000,32);
-		//flash_write_v2(&data[0],0x081E0000,1);
-		//flash_write_v2(&data[0],0x08100000,1);
-		//flash_write_v2(&data[0],0x08120000,1);
-		//fact_write_page();
-	}
-
-	if(flash_read_flg){
-		flash_read_flg = 0;
-		//data = Flash_Read(0x08100000 | (1 << 1) << 16);
-		//read_fact();
-		//flash_read(&tmp[0],0);
-		__nop();
-	}
-#endif // 0
-
-	if(car_run_mode ^ car_run_mode_bk){
-		car_run_mode_bk = car_run_mode;
-		setup_run_th(car_run_mode);
-	}
-
-	if(mode_test_flg){
-		mode_test_flg = 0;
-		i = 0;
-		//uart2_send_string("TT~AU02",strlen("TT~AU02"));
-		buff_test[i++] = 'T';
-		buff_test[i++] = 'T';
-		buff_test[i++] = '~';
-		buff_test[i++] = 'A';
-		buff_test[i++] = 'U';
-		buff_test[i++] = buff_file[0];
-		buff_test[i++] = buff_file[1];
-		uart2_send_string(&buff_test[0],i);
-	}
-
-#if 0
-	if(mode_test2_flg){
-		if(drive.left_up_on == 0){
-			drive.left_up_on = 1;
-		}
-		if(drive.right_up_on == 0){
-			drive.right_up_on = 1;
-		}
-	}
-	else{
-		if(drive.left_up_on){
-			drive.left_up_on = 0;
-		}
-		if(drive.right_up_on){
-			drive.right_up_on = 0;
-		}
-	}
-#endif
+	get_status_rasp();
 }
 
 //get status rasp
@@ -501,11 +406,12 @@ void get_status_rasp()
 	ras_center = HAL_GPIO_ReadPin(RAS_CENTER_GPIO_Port,RAS_CENTER_Pin);
 	ras_right_l = HAL_GPIO_ReadPin(RAS_RIGHT_L_GPIO_Port,RAS_RIGHT_L_Pin);
 	ras_right_h = HAL_GPIO_ReadPin(RAS_RIGHT_H_GPIO_Port,RAS_RIGHT_H_Pin);
-	ras_stop = HAL_GPIO_ReadPin(RAS_STOP_GPIO_Port,RAS_STOP_Pin);
+	//ras_stop = HAL_GPIO_ReadPin(RAS_STOP_GPIO_Port,RAS_STOP_Pin);
 	ras_blink = HAL_GPIO_ReadPin(RAS_BLINK_GPIO_Port,RAS_BLINK_Pin);
 }
-#endif // 1
+#endif
 /*----------------------------------------------------------------*/
+
 
 /*----------------------------------------------------------------*/
 //Memory
@@ -519,13 +425,6 @@ void mem_set(void)
 		REFREST_WWDR
 		write_fact();
 		REFREST_WWDR
-	}
-	
-	//reset get new value
-	if((fact.clk_Prescaler_scan[0] ^ fact_bk.clk_Prescaler_scan[0]) ||
-		 (fact.clk_Prescaler_scan[1] ^ fact_bk.clk_Prescaler_scan[1])){
-		//write_fact();
-		while(1);//wait WDT Reset
 	}
 }
 
@@ -623,7 +522,14 @@ void drive_xe()
 	if(ras_blink_tot == 0){
 		car_stop();
 	}
-	else if(ras_stop && 
+	else if(signal_stop_flg && (signal_run_flg == 0)){
+		car_stop();
+	}
+	else if(signal_stop_flg && signal_run_flg){
+		signal_stop_flg = 0;
+		signal_run_flg = 0;
+	}
+	else if(
 		ras_left_h && 
 		ras_left_l && 
 		ras_center && 
@@ -631,7 +537,7 @@ void drive_xe()
 		ras_right_h){
 		car_stop();
 	}
-	else if((ras_stop == 1) || 
+	else if(
 	   ((ras_left_h == 0) &&
 		(ras_left_l == 0) && 
 		(ras_center == 0) && 
@@ -639,7 +545,7 @@ void drive_xe()
 		(ras_right_h == 0))){
 		car_stop();
 	}
-	else if((ras_stop == 0) &&
+	else if(
 			((ras_left_h == 1) ||
 			 (ras_left_l == 1) ||
 			 (ras_center == 1) ||
@@ -686,254 +592,6 @@ void drive_xe()
 		car_stop();
 	}
 
-}
-
-//grb set PWM
-void rgb_pwm()
-{
-	unsigned long tmp;
-	unsigned char flg;
-	unsigned char i;
-	unsigned char i_bk;
-
-	//------------------------------------------------------
-	// Receive data from module IR
-	if(ir_new_data_type == IR_CMD_STOP){
-		if(driver_run_more_tm == 0){
-			//Stop PWM
-			if(drive.left_up_on){
-				drive.left_up_on = 0;
-			}
-			if(drive.left_down_on){
-				drive.left_down_on = 0;
-			}
-			if(drive.right_up_on){
-				drive.right_up_on = 0;
-			}
-			if(drive.right_down_on){
-				drive.right_down_on = 0;
-			}	
-		}
-	}
-	else{
-		//When new value
-		if(rgb_pwm_tot && (grb_stanby_tm == 0)){
-
-			//-----------------------------------------------
-			#if 1//Tìm Chênh lệch lớn nhất
-
-			if(test_motor_flg == 0){
-				max_chenhlech = 0;
-				i_bk = 0;
-				flg = 0;
-				//Stop
-				if((chn_flg[1] != 0) && (chn_flg[2] != 0) && (chn_flg[3] != 0)){
-
-					if(rgb_status == RGB_STATUS_FULL_CHIP){
-						// Up
-						if(car_run_up_down_flg_bk == CAR_RUN_UP){
-							if(car_run_up_down_flg == CAR_RUN_DOWN){
-								rgb_chk_ch3_flg = 1;
-							}
-
-							if(car_seq == 0){
-								car_seq = 1;
-								car_tm = 50;
-							}
-
-							//car_run_up_down_flg = car_run_ena ? CAR_STOP : CAR_RUN_DOWN;
-							car_run_up_down_flg = car_run_ena ? CAR_RUN_DOWN : CAR_RUN_DOWN;
-						}
-						// Down
-						else{
-							if(car_run_up_down_flg == CAR_RUN_UP){
-								rgb_chk_ch3_flg = 1;
-							}
-							if(car_seq == 0){
-								car_seq = 1;
-								car_tm = 50;
-							}
-							car_run_up_down_flg = car_run_ena ? CAR_RUN_UP : CAR_STOP;
-
-							// Start Power
-							if(car_start_run_flg){
-								rgb_chk_ch3_flg = 0;
-								car_start_run_flg = 0;
-								car_run_up_down_flg = CAR_STOP;
-							}
-						}
-					}
-
-					//Update status
-					if(rgb_status != RGB_STATUS_FULL_CHIP){
-						rgb_status = RGB_STATUS_FULL_CHIP;
-					}
-				}
-				//---------------------------------------------
-				else{
-					if(car_seq){
-						car_seq = 0;
-					}
-					//Update status
-					if(rgb_status != RBB_STATUS_SEE_HIGH_LEVEL){
-						rgb_status = RBB_STATUS_SEE_HIGH_LEVEL;
-					}
-					if(car_run_up_down_flg_bk ^ car_run_up_down_flg){
-						car_run_up_down_flg_bk = car_run_up_down_flg;
-					}
-					rgb_wait_seq = 0;
-					flg = 0;
-					//Chon độ lệch tần số lớn nhất
-					for(i = 0; i < sizeof(chn_flg);i++){
-						tmp = 0;
-						if(chn_flg[i]){
-							if(chn_chenhlech[i] > max_chenhlech + tmp){
-								max_chenhlech = chn_chenhlech[i];
-								i_bk = i;
-								flg = 1;
-							}
-						}
-					}
-
-					// Init detect line
-					if(line_detect_flg){
-						line_detect_flg = 0;
-					}
-
-					//Check & set
-					if(flg){
-						if(i_bk == 0){
-							rgb_chk_ch1_flg = 1;
-						}
-						else if(i_bk == 1){
-							rgb_chk_ch2_flg = 1;
-						}
-						else if(i_bk == 2){
-							rgb_chk_ch3_flg = 1;
-						}
-						else if(i_bk == 3){
-							rgb_chk_ch4_flg = 1;
-						}
-						else if(i_bk == 4){
-							rgb_chk_ch5_flg = 1;
-						}
-					}
-					//Stop PWM Out line
-					else{
-					}
-				}
-			}
-
-			#endif // 1//Tìm Chênh lệch lớn nhất
-			//-----------------------------------------------
-
-			#if 1//Get Fact data PWM to data PWM
-			// Init PWM
-			car_init();
-			if(car_tm == 0){
-				// run UP
-				if(car_run_up_down_flg == CAR_RUN_UP){
-					//Cho mục đích lấy thông tin RGB
-					if(adjust_on_flg){
-						//Stop drive when Adjust
-						if(adjust_set_mode == 0){
-							//Stop drive when Adjust
-							car_stop();
-						}
-						else if(adjust_set_mode == 1){
-							left_down(fact.duty_ch3[L]);
-						}
-						else if(adjust_set_mode == 2){
-							left_up(fact.duty_ch3[L]);
-						}
-						else if(adjust_set_mode == 3){
-							right_down(fact.duty_ch3[R]);
-						}
-						else{
-							right_up(fact.duty_ch3[R]);
-						}
-					}
-					else if(rgb_chk_ch3_flg){
-						left_up(fact.duty_ch3[L]);
-						right_up(fact.duty_ch3[R]);
-					}
-					else if(rgb_chk_ch2_flg){
-						left_up(fact.duty_ch2[L]);
-						right_up(fact.duty_ch2[R]);
-					}
-					else if(rgb_chk_ch4_flg){
-						left_up(fact.duty_ch4[L]);
-						right_up(fact.duty_ch4[R]);
-					}
-					else{		
-						car_stop();
-					}
-					car_adj_line_tm = 0;
-					car_adj_line_left_right = 0;
-				}
-				// run Down
-				else if(car_run_up_down_flg == CAR_RUN_DOWN){
-					//Cho mục đích lấy thông tin RGB
-					if(adjust_on_flg){
-						// Stop drive when Adjust
-						if(adjust_set_mode == 0){
-							car_stop();
-						}
-						else if(adjust_set_mode == 1){
-							left_down(fact.duty_ch3[L]);
-						}
-						else if(adjust_set_mode == 2){
-							left_up(fact.duty_ch3[L]);
-						}
-						else if(adjust_set_mode == 3){
-							right_down(fact.duty_ch3[R]);
-						}
-						else{
-							right_up(fact.duty_ch3[R]);
-						}
-					}
-					else{
-						// Run Down[LEFT = RIGHT]
-						left_down(fact.duty_ch3[L]);
-						right_down(fact.duty_ch3[R]);
-					}
-				}
-				// Stop
-				else{
-					car_stop();
-				}			
-			}
-			else{
-				car_stop();
-			}
-			#endif // 1//Get Fact data PWM to data PWM
-			send_status_car();
-			//-----------------------------------------------
-		}
-		else{// Not Get Signal RGB
-		    car_stop();
-		}
-	}
-}
-// Send status to PC
-void send_status_car() 
-{
-	unsigned char buff[5];
-	if(rgb_status_flg){
-		if(grb_stats_tm == 0){
-			buff[0] = rgb_chk_ch1_flg ? 0xAA : 0x00;
-			buff[1] = rgb_chk_ch2_flg ? 0xAA : 0x00;
-			buff[2] = rgb_chk_ch3_flg ? 0xAA : 0x00;
-			buff[3] = rgb_chk_ch4_flg ? 0xAA : 0x00;
-			buff[4] = rgb_chk_ch5_flg ? 0xAA : 0x00;
-			uart2_send_buff(&buff[0],sizeof(buff));
-			//Time 1sec
-			grb_stats_tm = 100;
-		}
-		else{
-			grb_stats_tm--;
-		}
-	}
 }
 
 // Car stop
@@ -1027,15 +685,6 @@ void car_init()
 	drive.left_down_on = 0;
 	drive.right_up_on = 0;
 	drive.right_down_on = 0;
-}
-
-//Thiết lập chạy trường hợp CDVL - CD&PD - CDI&PDN&ADN
-void setup_run_th(unsigned char mode)
-{
-	car_run_mode = mode;
-	car_run_mode_seq = 0;
-	car_run_mode_tm = 0;
-	line_detect_ct = 0;
 }
 
 //Từ data thiết lập thanh ghi điều khiển(Tốc độ)
@@ -1256,91 +905,64 @@ void set_freq(unsigned short value)
 /*----------------------------------------------------------------*/
 #if 1
 //Process data UART2 IR
-void serial2_comm(void)
+void serial1_comm(void)
 {
+	unsigned char addr;
+	unsigned char cmd;
+	unsigned char chk;
+	unsigned char flg;
+	
 	if(r1_flg){
+		if((ras_stop > 0) && (r1_pos == 3)){
+			addr = r1_buff[0];
+			addr_module = addr;
+			flg = chk_container(&ls_add_pass[0],addr_module,sizeof(ls_add_pass));
+			if(flg == 0){
+				cmd = r1_buff[1];
+				chk = (unsigned char)(addr + cmd);
+				if((cmd == IR_CMD_STOP) && (r1_buff[2] == chk)){
+					IR_Send(addr,IR_CMD_OK);
+					set_send_pc_must_ok(1,IR_CMD_STOP,0);
+					signal_stop_flg = 1;
+				}
+				else if((cmd == IR_CMD_BATTAY) && (r1_buff[2] == chk)){
+					IR_Send(addr,IR_CMD_OK);
+					send2pc_addr = addr_module;
+					set_send_pc_must_ok(1,IR_CMD_BATTAY,0);
+				}
+				else{}
+			}
+			if(addr_module_bk ^ addr_module){
+				delete_value_on_buff(&ls_add_pass[0],addr_module,sizeof(ls_add_pass));
+			}
+			addr_module_bk = addr_module;
+		}
+		//HAL_UART_Receive_IT(&huart1,&r1_buff2[0],sizeof(r1_buff2));
 		r1_flg = 0;
-		if((r1_buff[0] == IR_CMD_RUN) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			ir_new_data_flg = 1;
-			ir_new_data_type = IR_CMD_RUN;
-			//SEND SYSTEM I AM RUN
-			IR_Send(IR_CMD_OK);
-		}
-		else if((r1_buff[0] == IR_CMD_STOP) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			ir_new_data_flg = 1;
-			ir_new_data_type = IR_CMD_STOP;
-			//driver_run_more_tm = 100;//1 giay
-			//driver_run_more_tm = 50;//1 giay
-			driver_run_more_tm = 0;//1 giay
-			//SEND SYSTEM I AM STOP
-			IR_Send(IR_CMD_OK);
-		}
-		//IR get OK then stop send
-		else if((r1_buff[0] == IR_CMD_OK) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			//ir_new_data_flg = 1;
-			//ir_new_data_type = IR_CMD_OK;
-			//Finsh send to
-			ir_send_must_ok_flg = 0;
-			ir_send_must_ok_type = 0;
-			ir_send_must_ok_tm = 0;
-			set_ir_send_must_ok(0,OFF,0);
-		}
-		//IR get TH1 - Công đức vô lượng
-		else if((r1_buff[0] == IR_CMD_TH1_CDVL) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			car_run_mode = CAR_RUN_CDVL;
-		}
-		//IR get TH1 - Công đức bằng Phước Đức
-		else if((r1_buff[0] == IR_CMD_TH2_CDBPD) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			car_run_mode = CAR_RUN_CDBPD;
-		}
-		//IR get TH1 - Công đức Ít - Phước Đức Nhiều - Ác Đức Nhiều
-		else if((r1_buff[0] == IR_CMD_TH3_CDIPDNADN) && (r1_buff[1] == 0x0D) && (r1_buff[2] == 0x0A)){
-			car_run_mode = CAR_RUN_CDIPDNADN;
-		}
-
-		else{
-			//ir_new_data_flg = 0;
-			//ir_new_data_type = 0;
-		}
-
 		r1_pos = 0;
 	}
+	
 }
 
 //send data to module IR
-void IR_Send(unsigned char data)
+void IR_Send(unsigned char addr,unsigned char data)
 {
 	unsigned char* pos;
 	unsigned char i;
+	unsigned char chk;
 
+	chk = (unsigned char)(addr + data);
+	chk = ~chk;
 	pos = &t1_buff[0];
 	i = 0;
 	*(pos + i++) = 0xFA;//250
 	*(pos + i++) = 0xF1;//241
-	*(pos + i++) = data;//xx
-	*(pos + i++) = 0x0D;//13
-	*(pos + i++) = 0x0A;//10
+	*(pos + i++) = addr;//xx
+	*(pos + i++) = data;//13
+	*(pos + i++) = chk;//10
 	HAL_UART_Transmit_IT(&huart1,pos,i);
 }
 
-//send ir send must ok
-//value [len = 1] => forever send
-//value [len != 1 && len > 0 then send len]
-void set_ir_send_must_ok(unsigned char type,unsigned char on_off,unsigned char len)
-{
-	if(on_off){
-		ir_send_must_ok_flg = 1;
-		ir_send_must_ok_type = type;
-		ir_send_must_ok_tm = 0;
-		ir_send_must_ok_tmr = len + 1;
-	}
-	else{
-		ir_send_must_ok_flg = 0;
-		ir_send_must_ok_type = 0;
-		ir_send_must_ok_tm = 0;
-		ir_send_must_ok_tmr = 0;
-	}
-}
 #endif // 1
 /*----------------------------------------------------------------*/
 
@@ -1349,23 +971,17 @@ void set_ir_send_must_ok(unsigned char type,unsigned char on_off,unsigned char l
 /*----------------------------------------------------------------*/
 //Communication with PC
 #if 1
-
 void uart2_with_due(void)
 {
 	unsigned char* pos;
-	//unsigned char* pos2;
 	unsigned char data;
 	unsigned char flg;
-	//unsigned short i;
 	unsigned char tmp;
 	struct st_IR_Format ir_tmp;
 	unsigned char tmp_buff[4];
-	unsigned char cmd;
-	unsigned char tm;
 	
 	if(r2_flg){
 		pos = &r2_buff[3];
-
 		//Get addr
 		if(ascii2bin(pos,&tmp,1)){
 			//check addr
@@ -1416,26 +1032,6 @@ void uart2_with_due(void)
 					else{
 						u2_send_str("NG",2);
 					}
-				}
-				//Adjist on
-				else if(string_compera(pos,"ADJON#")){
-					adjust_on_flg = 1;
-					uart2_send_nak();
-				}
-				//Adjist off
-				else if(string_compera(pos,"ADJOFF#")){
-					adjust_on_flg = 0;
-					uart2_send_nak();
-				}
-				// Set Adjust 1
-				else if(string_compera(pos,"ADJSET1#")){
-					adjust_set_mode = 1;
-					uart2_send_nak();
-				}
-				// Set Adjust 2
-				else if(string_compera(pos,"ADJSET2#")){
-					adjust_set_mode = 2;
-					uart2_send_nak();
 				}
 				//Bootloader
 				else if(string_compera(pos,"BOOTLOADERXE#")){
@@ -1498,74 +1094,16 @@ void uart2_with_due(void)
 						IR_Format.data[0] = ir_tmp.data[0];
 						IR_Format.data[1] = ir_tmp.data[1];
 						IR_Format.data[2] = ir_tmp.data[2];
-						IR_Send(IR_Format.data[0]);
+						//IR_Send(IR_Format.data[0]);
 						u2_send_addr_data_str("OK",sizeof("OK"));
 					}
 					else{
 						u2_send_addr_data_str("NG",sizeof("NG"));
 					}
 				}
-				//SEND SCAN IR ON
-				else if(string_compera(pos,"SCANON#")){
-					//pos += strlen("SCANON");
-					ir_scan_flg = 1;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				//SEND SCAN IR OFF
-				else if(string_compera(pos,"SCANOFF#")){
-					//pos += strlen("SCANOFF");
-					ir_scan_flg = 0;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				//SEND SCAN IR
-				else if(string_compera(pos,"SCAN#")){
-					//pos += strlen("SCAN");
-					ir_scan_flg = 1;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				//CHECK IR SEND
-				else if(string_compera(pos,"IRCHK#")){
-					ir_chk_flg = 1;
-					ir_run_tm = 0;
-					//CHECK FINISH THEN SEND OK
-					//u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				//SEND CAR RUN 
-				else if(string_compera(pos,"RUN#")){
-					ir_run_flg = 1;
-					//ir_run_OnOff = 1;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				// Car run
-				else if(string_compera(pos,"CARRUN#")){
-					car_run_ena = 1;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
-				// car stop
-				else if(string_compera(pos,"CARSTOP#")){
-					car_run_ena = 0;
-					u2_send_addr_data_str("OK",sizeof("OK"));
-				}
 				//DUE SEND OF
 				else if(string_compera(pos,"OK#")){
 				}
-				// Get Main Key
-				else if(string_compera(pos,"MAINKEY#")){
-				    pos += 7;
-					cmd = *pos;
-					pos++;
-					if(ascii2bin(pos,&tm,1)){
-						if(cmd == IR_CMD_CHECK){
-							u2_send_addr_data_str("OK",strlen("OK"));
-						}
-						else{
-							u2_send_addr_data_str("NG",strlen("NG"));
-						}
-					}
-					else{
-						u2_send_addr_data_str("NG",strlen("NG"));
-					}
-                }
 				//Other
 				else{
 					u2_send_str("NG",2);
@@ -1697,6 +1235,7 @@ void uart2_with_due(void)
 				}
 			}
 		}
+		//HAL_UART_Receive_IT(&huart2,&r2_buff2[0],sizeof(r2_buff2));
 		r2_flg = 0;
 		r2_pos = 0;
 	}
@@ -1751,17 +1290,10 @@ END_ERROR:
 //Vesion
 void send_version()
 {
-	
 	unsigned char *pos;
 	unsigned char buff[64];
-	unsigned char tmp[64];
 	unsigned char i;
 	unsigned char j;
-	
-	// Copy table to buff
-	for(i=0;i<24;i++){
-		tmp[i] = model_tab[i];
-	}
 	
 	//Get ponter
 	pos = &buff[0];
@@ -1769,18 +1301,10 @@ void send_version()
 	*(pos + i++) = 'T';
 	*(pos + i++) = 'T';
 	*(pos + i++) = '~';
-	*(pos + i++) = 'V';
-	*(pos + i++) = 'E';
-	*(pos + i++) = 'R';
-	for(j=0;j<22;j++){
-		*(pos + i++) = tmp[j];
+	j = 0;
+	while(model_tab[j] != '#'){
+		*(pos + i++) = model_tab[j++];
 	}
-	
-	bin2ascii(&tmp[22],(pos + i),2);
-	
-	i += 4;
-	
-	//uart2_send_buff(pos,i);
 	uart2_send_string(pos,i);
 }
 
@@ -1972,47 +1496,206 @@ void u2_send_str(char *s_pos,unsigned short len)
 /*----------------------------------------------------------------*/
 
 /*----------------------------------------------------------------*/
-//Bluetooth
+//send to pc mini
 /*----------------------------------------------------------------*/
 #if 1
-
-//with module Bluetooth
-void serial3_communication()
+//with module PC mini
+void serial3_communication(void)
 {
-	unsigned short i;
 	unsigned char *pos;
-	//unsigned char dmy;
-
 	if(r3_flg){
-		r3_flg = 0;
-		//Clear buff
-		pos = &bluetooth_buff[0];
-		for(i = 0;i < sizeof(bluetooth_buff);i++){
-			*(pos + i) = 0;
+		pos = &r3_buff[3];
+		if(string_compera(pos,"WHO#")){
+			u3_send_model();
 		}
-
-		//s1_send_buff(&bluetooth_buff[0],sizeof(bluetooth_buff));
-		utf8_to_ascii(&r3_buff[0],r3_pos,&bluetooth_buff[0],&bluetooth_len);//Data type utf8 sang kiểu ascii không dấu
-		Upper(&bluetooth_buff[0],bluetooth_len);//Chử in hoa hóa
-		//s1_send_buff(&bluetooth_buff[0], bluetooth_len);
-		bluetooth_flg = 1;
-
-		//clear buff r3_buff
-        //Serial.println("â");
-		for(i = 0;i < sizeof(r3_buff);i++){
-			if(r3_buff[i]){
-				r3_buff[i] = 0;
+		else if(string_compera(pos,"OK#")){
+			set_stop_send_pc_must_ok();
+		}
+		else if(string_compera(pos,"RUN#")){
+			if(get_run_pass_addr()){
+				u3_send_nak();
 			}
 			else{
-				//break;
+				u3_send_ack();
 			}
 		}
-		r3_pos = 0;
+		else{
+			u3_send_ack();
+		}
 
-		//HAL_UART_DeInit(&huart3);
-		HAL_UART_Receive_IT(&huart3,&r3_buff2[0],128);
+		r3_flg = 0;
+		r3_pos = 0;
+		//HAL_UART_Receive_IT(&huart3,&r3_buff2[0],sizeof(r3_buff2));
 	}
-	//--------------------------------------------------
+
+	// Send to PC must ok
+	if(send2pc_flg){
+		if(send2pc_tm == 0){
+			if(send2pc_cmd == IR_CMD_STOP){
+				send_signal_stop_ir();
+			}
+			else if(send2pc_cmd == IR_CMD_BATTAY){
+				send_signal_bat_tay_ir();
+			}
+			send2pc_tm = SEND2PC_TM;
+		}
+	}
+}
+
+// get run and get pass addr
+unsigned char get_run_pass_addr()
+{
+	unsigned char *pos;
+	unsigned char buff[256];
+	unsigned char flg;
+	unsigned char len;
+
+	mem_set_data(&ls_add_pass[0],0x00,sizeof(ls_add_pass));
+	flg = 0;
+	pos = &r3_buff[6];//TT~RUNLLAAAAAA..
+	flg = ascii2bin(pos,&len,1);
+	if(flg){
+		pos += 2;
+		flg = ascii2bin(pos,&buff[0],len);
+		if(flg){
+			memcopy(&ls_add_pass[0],&buff[0],len);
+		}
+	}
+	return flg;
+}
+
+// send to pc add module ir
+void send_signal_bat_tay_ir()
+{
+	unsigned char* d_pos;
+	unsigned short i;
+	i = 0;
+	d_pos = &t3_buff[0];
+	*(d_pos + i++) = 'T';
+	*(d_pos + i++) = 'T';
+	*(d_pos + i++) = '~';
+	
+	bin2ascii(&send2pc_addr,d_pos + i,1);
+	i += 2;
+	*(d_pos + i++) = 0x0D;
+	*(d_pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,d_pos,i);
+}
+
+// send to pc add module ir with stop signal
+void send_signal_stop_ir()
+{
+	unsigned char* d_pos;
+	unsigned short i;
+	i = 0;
+	d_pos = &t3_buff[0];
+	*(d_pos + i++) = 'T';
+	*(d_pos + i++) = 'T';
+	*(d_pos + i++) = '~';
+	*(d_pos + i++) = 'S';
+	*(d_pos + i++) = 'T';
+	*(d_pos + i++) = 'O';
+	*(d_pos + i++) = 'P';
+	bin2ascii(&send2pc_addr,d_pos + i,1);
+	i += 2;
+	*(d_pos + i++) = 0x0D;
+	*(d_pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,d_pos,i);
+}
+
+// set send to pc mini
+void set_send_pc_must_ok(unsigned char on, unsigned char type,unsigned short tm)
+{
+	if(send2pc_addr ^ send2pc_addr_bk){
+		send2pc_addr_bk = send2pc_addr;
+		send2pc_flg = on;
+		send2pc_tm = tm;
+		send2pc_cmd = type;
+	}
+}
+
+// set stop send to pc mini
+void set_stop_send_pc_must_ok()
+{
+	send2pc_addr_bk = send2pc_addr;
+	send2pc_flg = 0;
+	send2pc_tm = 0;
+}
+
+// send model
+void u3_send_model()
+{
+	unsigned char *pos;
+	unsigned char buff[64];
+	unsigned char i;
+	unsigned char j;
+	
+	//Get ponter
+	pos = &buff[0];
+	i = 0;
+	*(pos + i++) = 'T';
+	*(pos + i++) = 'T';
+	*(pos + i++) = '~';
+	j = 0;
+	while(model_tab[j] != '#'){
+		*(pos + i++) = model_tab[j++];
+	}
+	u3_send_string(pos,i);
+}
+
+//send buff hex convert to ascii
+void u3_send_buff(unsigned char* s_pos,unsigned short len)
+{
+	unsigned char* d_pos;
+	unsigned short i;
+	i = len * 2;
+	d_pos = &t3_buff[0];
+	bin2ascii(s_pos,d_pos,len);
+	*(d_pos + i++) = 0x0D;
+	*(d_pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,d_pos,i);
+}
+
+//u3 send string
+void u3_send_string(unsigned char *s_pos,unsigned short len)
+{
+	unsigned char* d_pos;
+	unsigned short i;
+	d_pos = &t3_buff[0];
+	for(i = 0;i < len;i++){
+		*(d_pos + i) = *(s_pos + i);
+	}
+	*(d_pos + i++) = 0x0D;
+	*(d_pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,d_pos,i);
+}
+
+//send nak/ok
+void u3_send_nak(void)
+{
+	unsigned char* pos;
+	unsigned char i;
+	pos = &t3_buff[0];
+	i = 0;
+	*(pos + i++) = 'O';
+	*(pos + i++) = 'K';
+	*(pos + i++) = 0x0D;
+	*(pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,pos,i);
+}
+
+//send ack/ng
+void u3_send_ack(void)
+{
+	unsigned char* pos;
+	unsigned char i;
+	pos = &t3_buff[0];
+	i = 0;
+	*(pos + i++) = 'N';
+	*(pos + i++) = 'G';
+	*(pos + i++) = 0x0D;
+	*(pos + i++) = 0x0A;
+	HAL_UART_Transmit_IT(&huart3,pos,i);
 }
 #endif // 1
 /*----------------------------------------------------------------*/
@@ -2027,46 +1710,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 	if(htim->Instance == TIM1){
 		htim1_flg = 1;
 		timer_couter();
-		
 	}
 }
 
 //Interrupt UART
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
 {
-	unsigned short i;
-	unsigned char *pos;
 	//Module IR
-	if(huart->Instance == USART1)
-	{
-		pos = &r1_buff2[0];
-		for(i = 0;i < sizeof(r1_buff2);i++){
-			*(pos + i) = 0;
-		}
+	if(huart->Instance == USART1){
 		HAL_UART_Receive_IT(&huart1,&r1_buff2[0],sizeof(r1_buff2));	//Kich hoat UART nhan du lieu ngat moi luc
 	}
 	//With PC
-	if(huart->Instance == USART2)	//UART hien tai la uart3
-	{
-		pos = &r2_buff2[0];
-		for(i = 0;i < sizeof(r2_buff2);i++){
-			*(pos + i) = 0;
-		}
+	if(huart->Instance == USART2){
 		HAL_UART_Receive_IT(&huart2,&r2_buff2[0],sizeof(r2_buff2));
 	}
-	//With bluetooth
-	if(huart->Instance == USART3)	//UART hien tai la uart3
-	{
-		pos = &r3_buff2[0];
-		for(i = 0;i < sizeof(r3_buff2);i++){
-			*(pos + i) = 0;
-		}
+	//With PC MINI
+	if(huart->Instance == USART3){
 		HAL_UART_Receive_IT(&huart3,&r3_buff2[0],sizeof(r3_buff2));
 	}
 
 }
 
-//irq uart1 rx it
+//irq uart1 with module IR
 unsigned char uart1_rx_it(unsigned char data)
 {
 	if(r1_flg == 0){
@@ -2074,11 +1739,10 @@ unsigned char uart1_rx_it(unsigned char data)
 		//r1_flg = 1;
 		r1_tm = 5;
 	}
-
 	return 1;
 }
 
-//irq uart2 rx it
+//irq uart2 with PC
 unsigned char uart2_rx_it(unsigned char data)
 {
 	unsigned char flg;
@@ -2109,7 +1773,6 @@ unsigned char uart2_rx_it(unsigned char data)
 		}
 		else{
 			r2_buff[r2_pos++] = data;
-			#if 1
 			if((r2_buff[3] == 'P') && (r2_buff[4] == 'G')){
 				//[TT~PG] + [1024] + [2 BYTE CHECKSUM] + [2 BYTE CRC]
 				if(r2_pos == 1033){
@@ -2125,28 +1788,56 @@ unsigned char uart2_rx_it(unsigned char data)
 				if(r2_pos >= sizeof(r2_buff)){
 					r2_pos = 0;
 					flg = 1;
-					//HAL_UART_Receive_IT(&huart2,&uart2_rx[0],sizeof(uart2_rx));
 				}
 				else if((r2_buff[r2_pos - 2] == 0x0D) && (r2_buff[r2_pos - 1] == 0x0A)){
 					r2_flg = 1;
 					flg = 1;
-					//HAL_UART_Receive_IT(&huart2,&uart2_rx[0],sizeof(uart2_rx));
 				}
 			}
-			#endif // 0
-
-
 		}
 	}
 	return flg;
 }
 
-//uart for bluetooth
+//irq uart3 with PC on car
 unsigned char uart3_rx_it(unsigned char data)
 {
-	r3_buff[r3_pos++] = data;
-	r3_tot = 50;
-	return 0;
+	unsigned char flg;
+	flg = 0;
+	if(r3_flg == 0){
+		if(r3_pos == 0){
+			if(data == 'T'){
+				r3_buff[r3_pos++] = data;
+			}
+		}
+		else if(r3_pos == 1){
+			if(data == 'T'){
+				r3_buff[r3_pos++] = data;
+			}
+			else{
+				r3_pos = 0;
+			}
+		}
+		else if(r3_pos == 2){
+			if(data == '~'){
+				r3_buff[r3_pos++] = data;
+			}
+			else{
+				r3_pos = 0;
+			}
+		}
+		else{
+			r3_buff[r3_pos++] = data;
+			if(r3_pos >= sizeof(r3_buff)){
+				flg = 1;
+			}
+			else if((r3_buff[r3_pos - 2] == 0x0D) && (r3_buff[r3_pos - 1] == 0x0A)){
+				r3_flg = 1;
+				flg = 1;
+			}
+		}
+	}
+	return flg;
 }
 
 #if 0
@@ -2798,6 +2489,41 @@ void memcopy(unsigned char* d_pos,unsigned char* s_pos,unsigned short len)
 	unsigned short i;
 	for(i = 0;i < len;i++){
 		*(d_pos + i) = *(s_pos + i);
+	}
+}
+
+//Mem set
+void mem_set_data(unsigned char* d_pos,unsigned char data,unsigned short len)
+{
+	unsigned short i;
+	for(i = 0;i < len;i++){
+		*(d_pos + i) = data;
+	}
+}
+
+// check container
+unsigned char chk_container(unsigned char* pos,unsigned char chk,unsigned short len)
+{
+	unsigned char flg;
+	unsigned short i;
+	flg = 0;
+	for(i = 0;i < len;i++){
+		if(*(pos + i) == chk){
+			flg = 1;
+			break;
+		}
+	}
+	return flg;
+}
+
+// delete value on buff
+void delete_value_on_buff(unsigned char* pos,unsigned char chk,unsigned short len)
+{
+	unsigned short i;
+	for(i = 0;i < len;i++){
+		if(*(pos + i) == chk){
+			*(pos + i) = 0x00;
+		}
 	}
 }
 

@@ -78,6 +78,8 @@ void Error_Handler(void);
 #define PWM_LEFT_A_GPIO_Port GPIOB
 #define PWM_LEFT_B_Pin GPIO_PIN_1
 #define PWM_LEFT_B_GPIO_Port GPIOB
+#define RAS_SHUTDOW_Pin GPIO_PIN_14
+#define RAS_SHUTDOW_GPIO_Port GPIOB
 #define RAS_SET_TH_H_Pin GPIO_PIN_15
 #define RAS_SET_TH_H_GPIO_Port GPIOB
 #define RAS_SET_TH_L_Pin GPIO_PIN_8
@@ -96,8 +98,8 @@ void Error_Handler(void);
 #define RAS_STOP_GPIO_Port GPIOB
 #define RAS_BLINK_Pin GPIO_PIN_6
 #define RAS_BLINK_GPIO_Port GPIOB
-#define RAS_SET_SHUTDOWN_Pin GPIO_PIN_7
-#define RAS_SET_SHUTDOWN_GPIO_Port GPIOB
+#define RAS_START_Pin GPIO_PIN_7
+#define RAS_START_GPIO_Port GPIOB
 #define PWM_LED_H_Pin GPIO_PIN_8
 #define PWM_LED_H_GPIO_Port GPIOB
 #define PWM_LED_L_Pin GPIO_PIN_9

@@ -43,7 +43,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -77,7 +76,7 @@ static void MX_TIM4_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	unsigned short dmy;
+	//unsigned short dmy;
 	
   //-------------------------------
     //Read fact
@@ -88,10 +87,6 @@ int main(void)
       #if 0
       write_fact();
       #endif // 0
-			dmy = fact.clk_Prescaler_scan[0];
-			dmy <<= 8;
-			dmy |= fact.clk_Prescaler_scan[1];
-      htim2.Init.Prescaler = dmy; 
   }
 	fact_bk = fact;
   //-------------------------------
@@ -503,7 +498,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -575,10 +570,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, PWM_RIGHT_EN_Pin|PWM_LEFT_EN_Pin|RAS_SET_TH_L_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(RAS_SET_TH_H_GPIO_Port, RAS_SET_TH_H_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(RAS_SET_SHUTDOWN_GPIO_Port, RAS_SET_SHUTDOWN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, RAS_SHUTDOW_Pin|RAS_SET_TH_H_Pin|RAS_START_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -594,12 +586,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : RAS_SET_TH_H_Pin */
-  GPIO_InitStruct.Pin = RAS_SET_TH_H_Pin;
+  /*Configure GPIO pins : RAS_SHUTDOW_Pin RAS_SET_TH_H_Pin RAS_START_Pin */
+  GPIO_InitStruct.Pin = RAS_SHUTDOW_Pin|RAS_SET_TH_H_Pin|RAS_START_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(RAS_SET_TH_H_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RAS_RIGHT_H_Pin RAS_RIGHT_L_Pin RAS_CENTER_Pin */
   GPIO_InitStruct.Pin = RAS_RIGHT_H_Pin|RAS_RIGHT_L_Pin|RAS_CENTER_Pin;
@@ -612,13 +604,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : RAS_SET_SHUTDOWN_Pin */
-  GPIO_InitStruct.Pin = RAS_SET_SHUTDOWN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(RAS_SET_SHUTDOWN_GPIO_Port, &GPIO_InitStruct);
 
 }
 

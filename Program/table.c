@@ -3,7 +3,7 @@
 
 const unsigned char model_tab[] = 
 {
-	'T','H','I','E','N',' ','T','O','N','G',' ','T','A','N',' ','D','I','E','U',' ','V','R',VER_H,VER_l
+	'T','T','C','A','R','V','R',VER_H1,VER_H2,VER_l1,VER_l2,'#'
 };
 
 

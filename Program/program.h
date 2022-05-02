@@ -42,15 +42,6 @@ void opera(void);
 // drive xe
 void drive_xe(void);
 
-//grb set PWM
-void rgb_pwm(void);
-
-// Check channel RGB
-void get_chenh_lech_channel(unsigned char channel);
-
-// Check channel RGB
-void get_chenh_lech_freq_channel(unsigned char channel);
-
 // Car Run Down
 void car_run_down_sp1(void);
 
@@ -97,6 +88,16 @@ void set_duty(unsigned char duty,unsigned long channel);
 //set freqency PWM
 void set_freq(unsigned short value);
 
+
+/*----------------------------------------------------------------*/
+
+
+
+/*----------------------------------------------------------------*/
+//RASP
+//RASP opera
+void rasp_opera(void);
+
 //get status rasp
 void get_status_rasp(void);
 /*----------------------------------------------------------------*/
@@ -125,16 +126,10 @@ void read_fact_read_address(void);
 
 /*----------------------------------------------------------------*/
 //Process data UART2 IR
-void serial2_comm(void);
+void serial1_comm(void);
 
 //send data to module IR
-void IR_Send(unsigned char data);
-
-//send ir send must ok
-//value [len = 1] => forever send
-//value [len != 1 && len > 0 then send len]
-void set_ir_send_must_ok(unsigned char type,unsigned char on_off,unsigned char len);
-
+void IR_Send(unsigned char addr,unsigned char data);
 /*----------------------------------------------------------------*/
 
 
@@ -196,6 +191,36 @@ void u2_send_str(char *s_pos,unsigned short len);
 /*----------------------------------------------------------------*/
 //with module Bluetooth
 void serial3_communication(void);
+
+// get run and get pass addr
+unsigned char get_run_pass_addr(void);
+
+// send to pc add module ir
+void send_signal_bat_tay_ir(void);
+
+// send to pc add module ir with stop signal
+void send_signal_stop_ir(void);
+
+// set send to pc mini
+void set_send_pc_must_ok(unsigned char on, unsigned char type, unsigned short tm);
+
+// set stop send to pc mini
+void set_stop_send_pc_must_ok(void);
+
+// send model
+void u3_send_model(void);
+
+//send buff hex convert to ascii
+void u3_send_buff(unsigned char *s_pos, unsigned short len);
+
+//u3 send string
+void u3_send_string(unsigned char *s_pos, unsigned short len);
+
+//send nak/ok
+void u3_send_nak(void);
+
+//send ack/ng
+void u3_send_ack(void);
 
 /*----------------------------------------------------------------*/
 
@@ -311,6 +336,15 @@ unsigned long char2long(unsigned char *pos);
 
 //Mem copy
 void memcopy(unsigned char* d_pos,unsigned char* s_pos,unsigned short len);
+
+//Mem set
+void mem_set_data(unsigned char* d_pos,unsigned char data,unsigned short len);
+
+// check container
+unsigned char chk_container(unsigned char* pos,unsigned char chk,unsigned short len);
+
+// delete value on buff
+void delete_value_on_buff(unsigned char* pos,unsigned char chk,unsigned short len);
 
 // check other
 unsigned char chk_other(unsigned char* pos,unsigned char* pos2,unsigned short len);

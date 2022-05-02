@@ -19,6 +19,8 @@
 #define FLASH_APP_START_ADDRESS 					((uint32_t)0x08004000u)
 #define FLASH_BOOTLOADER_START_ADDRESS 		((uint32_t)0x08000000u)
 #define FLASH_APP_END_ADDRESS   					((uint32_t)FLASH_BANK1_END - 0x10u) /**< Leave a little extra space at the end. */
+#define JIMP_APP						    0X55
+#define JIMP_BOOTLOADER					0XAA
 
 /* Status report for the functions. */
 typedef enum {
